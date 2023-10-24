@@ -7,6 +7,7 @@ from pydantic import BaseModel
 import torch
 
 from pipelines.summary_pipeline import SummaryPipeline
+from pipelines.review_pipeline import ReviewPipeline
 from utils.log import rayserve_logger
 
 app = FastAPI()
@@ -42,12 +43,20 @@ class CopilotDeployment:
         self.summary_pipeline = SummaryPipeline(
             model_name_or_path=model_name_or_path, task=task, torch_dtype=torch_dtype
         )
+        self.review_pipeline = ReviewPipeline(
+            model_name_or_path=model_name_or_path, task=task, torch_dtype=torch_dtype
+        )
         self.logger = rayserve_logger()
 
-    # TODO
+
     @app.get("/pr-review")
-    def review(self):
-        pass
+    def review(self, item: Item):
+        """
+        Args:
+            item (Item): The POST body should include the url.
+        """
+        self.logger.debug("request parameters: {item}".format(item=item))
+        return self.review_pipeline.completion(url=item.url)
 
     @app.post("/pr-summary/")
     def summary(self, item: Item):
